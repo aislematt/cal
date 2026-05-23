@@ -1,0 +1,38 @@
+name: Generate Summer Calendar
+
+on:
+  schedule:
+    - cron: '0 11 * * *'   # 7am EDT every day
+  workflow_dispatch:         # also lets you trigger it manually from GitHub
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: pip install google-auth-oauthlib google-api-python-client
+
+      - name: Write credentials from secrets
+        run: |
+          echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
+          echo '${{ secrets.GOOGLE_TOKEN }}'        > token.json
+
+      - name: Generate calendar
+        run: python generate.py
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          include_files: index.html
+          publish_branch: gh-pages
